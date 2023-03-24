@@ -1,0 +1,76 @@
+EXERCISE 4
+KSOM dataset
+
+import torch
+import torch.nn as nn
+import matplotlib.pyplot as plt
+import pandas as pd
+df = pd.read_csv("C:\Users\HP\Documents\LAB\DL\ex-4\heart.csv")
+x = df.iloc[:,:-1]
+y = df.iloc[:,-1]
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+x = scaler.fit_transform(x)
+class KSOM(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(KSOM, self).__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.weights = torch.randn(input_dim,output_dim)
+    def forward(self, x):
+        distances = torch.sum((x - self.weights)**2, axis=1)
+        winner = torch.argmin(distances)
+        return winner
+    def weight_updation(self, x, winner, lr=0.02):
+        d = x
+        for i in range(self.output_dim):
+            if i == winner:
+                self.weights[i] += lr * d[i]
+            return self.weights[i]
+model = KSOM(input_dim=13, output_dim=13)
+for epoch in range(2):
+    for o in x:
+        o = torch.Tensor(o)
+        winner = model(o)
+        print(model.weight_updation(o, winner, lr=0.2))
+---------------------------------------------------------------------------------------------
+KSOM generic
+import torch
+import numpy as np
+class KSOM():
+    def __init__(self):
+        self.in_dim1 = int(input("Enter The No of Rows In The Input Data\n"))
+        self.in_dim2 = int(input("Enter The No of Columns In The Input Data\n"))
+        self.wt_dim1 = int(input("Enter The No of Rows In The Weight Data\n"))
+        self.wt_dim2 = int(input("Enter The No of Columns In The Weight Data\n"))
+        self.alpha = float(input("Enter The Value Of Alpha\n"))
+        self.input_data = [[0 for x in range(self.in_dim1)] for y in range(self.in_dim2)]
+        self.wt_data = [[0 for x in range(self.wt_dim1)] for y in range(self.wt_dim2)]
+        for i in range(self.in_dim2):
+            for j in range(self.in_dim1):
+                data = float(input("Enter The Input Data\n"))
+                self.input_data[i][j] = data
+        for i in range(self.wt_dim2):
+            for j in range(self.wt_dim1):
+                data = float(input("Enter The Weight Data\n"))
+                self.wt_data[i][j] = data
+        self.input_data = torch.as_tensor(self.input_data)
+        self.wt_data = torch.as_tensor(self.wt_data)
+        self.epochs=0
+    def check(self):
+        while(self.epochs!=1):
+                for i in range(self.wt_dim1):
+                dist = [0 for x in range(self.wt_dim2)]
+                for j in range(self.wt_dim2):
+                    for l in range(self.in_dim1):
+                        dist[j] = dist[j]+(self.input_data[i][l]-self.wt_data[j][l])**2
+                print(dist)
+                min_dist = min(dist)
+                index = dist.index(min_dist)
+                for o in range(self.wt_dim1):
+                    self.wt_data[index][o] = self.wt_data[index][o] + self.alpha*(self.input_data[i][o]-self.wt_data[index][o])
+            self.epochs = self.epochs+1
+            self.alpha = 0.5*self.alpha
+k = KSOM()
+k.check()
+--------------------------------------------------------------------------------------------------

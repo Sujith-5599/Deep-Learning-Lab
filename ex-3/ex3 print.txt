@@ -1,0 +1,124 @@
+EXERCISE 3
+RBF a
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+class RBFN(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size, gamma):
+        super(RBFN, self).__init__()
+        self.hidden = nn.Linear(input_size, hidden_size)
+        self.output = nn.Linear(hidden_size, output_size)
+        self.gamma = gamma
+
+    def forward(self, x):
+        x = self.hidden(x)
+        x = torch.exp(-self.gamma * torch.pow(x, 2))
+        x = self.output(x)
+        return x
+df=pd.read_csv("C:\Users\HP\Documents\LAB\DL\ex-3\Dataset\heart.csv")
+X=df.iloc[:,:-1]
+y=df.iloc[:,-1]
+print(X)
+X=X.to_numpy()
+y=y.to_numpy()
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train = torch.from_numpy(X_train).float()
+X_test = torch.from_numpy(X_test).float()
+y_train = torch.from_numpy(y_train).long()
+y_test = torch.from_numpy(y_test).long()
+input_size1 = X.shape[1]
+hidden_size1 = 10
+output_size1 = len(set(y))
+gamma1 = 0.1
+rbfn = RBFN(input_size1, hidden_size1, output_size1, gamma1)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(rbfn.parameters())
+num_epochs = 100
+for epoch in range(num_epochs):
+    outputs = rbfn(X_train)
+    loss = criterion(outputs, y_train)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    if (epoch+1) % 10 == 0:
+        print('Epoch [{}/{}], Loss: {:.4f}'.format(epoch+1, num_epochs, loss.item()))
+rbfn.eval()
+outputs = rbfn(X_test)
+_,predicted = torch.max(outputs.data, 1)
+
+    # Compute accuracy
+total = y_test.size(0)
+correct = (predicted == y_test).sum().item()
+accuracy = correct / total
+print('Accuracy: {:.2f}%'.format(accuracy*100))
+---------------------------------------------------------------------------------------------
+RBF b
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.layers import Dense
+import warnings
+warnings.filterwarnings('ignore')
+class RBFLayer(keras.layers.Layer):
+    def __init__(self,hidden_dim,s):
+        super(RBFLayer, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.s = s
+        self.centers = self.add_weight(name='centers',
+                                       shape=(self.hidden_dim,10),
+                                       initializer='uniform',
+                                       trainable=True)
+    def formula(self,x,y):
+        return torch.exp(-self.s * (x - y).pow(2).sum(dim=1))
+
+    def forward(self,x):
+        a = self.formula(x, self.centers)
+        return a
+model = keras.Sequential([
+    Dense(10, input_shape=(2,), activation='relu'),
+    RBFLayer(10,0.02),
+    Dense(1, activation='sigmoid')
+])
+
+model.compile(loss='binary_crossentropy', optimizer='adam')
+import numpy as np
+X = np.random.randn(100, 2)
+y = (X[:, 0] * X[:, 1] > 0).astype(float)
+
+model.fit(X, y, epochs=10, batch_size=32)
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.layers import Dense
+class RBFLayer(keras.layers.Layer):
+    def __init__(self, units, gamma, **kwargs):
+        super(RBFLayer, self).__init__(**kwargs)
+        self.units = units
+        self.gamma = gamma
+
+    def build(self, input_shape):
+        self.centers = self.add_weight(name='centers',
+                                       shape=(self.units, input_shape[1]),
+                                       initializer='uniform',
+                                       trainable=True)
+        super(RBFLayer, self).build(input_shape)
+
+    def call(self, inputs):
+        diff = tf.expand_dims(inputs, axis=1) - self.centers
+        squared_diff = tf.reduce_sum(tf.square(diff), axis=-1)
+        return tf.exp(-self.gamma * squared_diff)
+model = keras.Sequential([
+    Dense(10, input_shape=(2,), activation='relu'),
+    RBFLayer(10, gamma=0.1),
+    Dense(1, activation='sigmoid')
+])
+model.compile(loss='binary_crossentropy', optimizer='adam')
+import numpy as np
+X = np.random.randn(100, 2)
+y = (X[:, 0] * X[:, 1] > 0).astype(float)
+model.fit(X, y, epochs=10, batch_size=32)
+----------------------------------------------------------------------------------------------
+
